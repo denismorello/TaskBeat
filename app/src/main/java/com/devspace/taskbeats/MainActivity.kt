@@ -4,11 +4,26 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
+import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity() {
+
+    private val db by lazy {
+        Room.databaseBuilder(
+            applicationContext, TaskBeatDataBase::class.java, "database-task-beat"
+        ).build()
+    }
+
+    private val categoryDao by lazy {
+        db.getCategoryDao()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        insertDefaultCategory()
 
         val rvCategory = findViewById<RecyclerView>(R.id.rv_categories)
         val rvTask = findViewById<RecyclerView>(R.id.rv_tasks)
@@ -25,95 +40,101 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            val taskTemp =
-                if (selected.name != "ALL") {
-                    tasks.filter { it.category == selected.name }
-                } else {
-                    tasks
-                }
+            val taskTemp = if (selected.name != "ALL") {
+                tasks.filter { it.category == selected.name }
+            } else {
+                tasks
+            }
             taskAdapter.submitList(taskTemp)
 
             categoryAdapter.submitList(categoryTemp)
         }
 
         rvCategory.adapter = categoryAdapter
-        categoryAdapter.submitList(categories)
+        getCategoriesFromDataBase(categoryAdapter)
 
         rvTask.adapter = taskAdapter
         taskAdapter.submitList(tasks)
+    }
+
+    private fun insertDefaultCategory() {
+        val categoriesEntity = categories.map {
+            CategoryEntity(
+                name = it.name, isSelected = it.isSelected
+            )
+        }
+        GlobalScope.launch (Dispatchers.IO) {
+            categoryDao.insertAll(categoriesEntity)
+        }
+    }
+
+    private fun getCategoriesFromDataBase(adapter: CategoryListAdapter) {
+        GlobalScope.launch (Dispatchers.IO) {
+            val categoriesFromDb: List<CategoryEntity> = categoryDao.getAll()
+            val categoriesUiData = categoriesFromDb.map {
+                CategoryUiData(
+                    name = it.name,
+                    isSelected = it.isSelected
+                )
+            }
+            adapter.submitList(categoriesUiData)
+        }
     }
 }
 
 val categories = listOf(
     CategoryUiData(
-        name = "ALL",
-        isSelected = false
+        name = "ALL", isSelected = false
     ),
     CategoryUiData(
-        name = "STUDY",
-        isSelected = false
+        name = "STUDY", isSelected = false
     ),
     CategoryUiData(
-        name = "WORK",
-        isSelected = false
+        name = "WORK", isSelected = false
     ),
     CategoryUiData(
-        name = "WELLNESS",
-        isSelected = false
+        name = "WELLNESS", isSelected = false
     ),
     CategoryUiData(
-        name = "HOME",
-        isSelected = false
+        name = "HOME", isSelected = false
     ),
     CategoryUiData(
-        name = "HEALTH",
-        isSelected = false
+        name = "HEALTH", isSelected = false
     ),
 )
 
 val tasks = listOf(
     TaskUiData(
-        "Ler 10 páginas do livro atual",
-        "STUDY"
+        "Ler 10 páginas do livro atual", "STUDY"
     ),
     TaskUiData(
-        "45 min de treino na academia",
-        "HEALTH"
+        "45 min de treino na academia", "HEALTH"
     ),
     TaskUiData(
-        "Correr 5km",
-        "HEALTH"
+        "Correr 5km", "HEALTH"
     ),
     TaskUiData(
-        "Meditar por 10 min",
-        "WELLNESS"
+        "Meditar por 10 min", "WELLNESS"
     ),
     TaskUiData(
-        "Silêncio total por 5 min",
-        "WELLNESS"
+        "Silêncio total por 5 min", "WELLNESS"
     ),
     TaskUiData(
-        "Descer o livo",
-        "HOME"
+        "Descer o livo", "HOME"
     ),
     TaskUiData(
-        "Tirar caixas da garagem",
-        "HOME"
+        "Tirar caixas da garagem", "HOME"
     ),
     TaskUiData(
-        "Lavar o carro",
-        "HOME"
+        "Lavar o carro", "HOME"
     ),
     TaskUiData(
-        "Gravar aulas DevSpace",
-        "WORK"
+        "Gravar aulas DevSpace", "WORK"
     ),
     TaskUiData(
-        "Criar planejamento de vídeos da semana",
-        "WORK"
+        "Criar planejamento de vídeos da semana", "WORK"
     ),
     TaskUiData(
-        "Soltar reels da semana",
-        "WORK"
+        "Soltar reels da semana", "WORK"
     ),
 )
