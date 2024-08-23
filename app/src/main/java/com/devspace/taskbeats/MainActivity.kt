@@ -28,7 +28,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         insertDefaultCategory()
-        insertDefaultTask()
+        //Trecho utilizado para criar tasks fixas sem utilizar o Room Database
+        //insertDefaultTask()
 
         val rvCategory = findViewById<RecyclerView>(R.id.rv_categories)
         val rvTask = findViewById<RecyclerView>(R.id.rv_tasks)
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
         val categoryAdapter = CategoryListAdapter()
 
         categoryAdapter.setOnClickListener { selected ->
+            /*
             val categoryTemp = categories.map { item ->
                 when {
                     item.name == selected.name && !item.isSelected -> item.copy(isSelected = true)
@@ -44,7 +46,8 @@ class MainActivity : AppCompatActivity() {
                     else -> item
                 }
             }
-
+             */
+            /*
             val taskTemp = if (selected.name != "ALL") {
                 tasks.filter { it.category == selected.name }
             } else {
@@ -53,6 +56,7 @@ class MainActivity : AppCompatActivity() {
             taskAdapter.submitList(taskTemp)
 
             categoryAdapter.submitList(categoryTemp)
+             */
         }
 
         rvCategory.adapter = categoryAdapter
@@ -73,6 +77,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    //Trecho utilizado para criar tasks fixas sem utilizar o Room Database
+    /*
     private fun insertDefaultTask(){
         val taskEntities = tasks.map {
             TaskEntity(name = it.name, category = it.category)
@@ -81,6 +87,7 @@ class MainActivity : AppCompatActivity() {
             taskDao.insertAll(taskEntities)
         }
     }
+     */
 
     private fun getCategoriesFromDataBase(adapter: CategoryListAdapter) {
         GlobalScope.launch (Dispatchers.IO) {
@@ -91,6 +98,14 @@ class MainActivity : AppCompatActivity() {
                     isSelected = it.isSelected
                 )
             }
+                .toMutableList()
+
+            categoriesUiData.add(
+                CategoryUiData(
+                    name = "    +    ",
+                    isSelected = false
+                )
+            )
             adapter.submitList(categoriesUiData)
         }
     }
@@ -130,7 +145,8 @@ val categories = listOf(
     ),
 )
 
-
+//Trecho utilizado para criar tasks fixas sem utilizar o Room Database
+/*
 val tasks = listOf(
     TaskUiData(
         "Ler 10 páginas do livro atual", "STUDY"
@@ -165,4 +181,7 @@ val tasks = listOf(
     TaskUiData(
         "Soltar reels da semana", "WORK"
     ),
-)
+
+ */
+
+
