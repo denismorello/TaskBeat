@@ -14,6 +14,8 @@ class MainActivity : AppCompatActivity() {
     private var categories = listOf<CategoryUiData>()
     private var tasks = listOf<TaskUiData>()
 
+    private val categoryAdapter = CategoryListAdapter()
+
 
     private val db by lazy {
         Room.databaseBuilder(
@@ -38,11 +40,16 @@ class MainActivity : AppCompatActivity() {
         val rvTask = findViewById<RecyclerView>(R.id.rv_tasks)
 
         val taskAdapter = TaskListAdapter()
-        val categoryAdapter = CategoryListAdapter()
 
         categoryAdapter.setOnClickListener { selected ->
-            if(selected.name == "    +    "){
-                val createCategoryBottomSheet = CreateCategoryBottomSheet()
+            if (selected.name == "    +    ") {
+                val createCategoryBottomSheet = CreateCategoryBottomSheet { categoryName ->
+                    val categoryEntity = CategoryEntity(
+                        name = categoryName,
+                        isSelected = false
+                    )
+                    insertCategory(categoryEntity)
+                }
                 createCategoryBottomSheet.show(supportFragmentManager, "createCategoryBottomSheet")
 
             } else {
@@ -65,41 +72,41 @@ class MainActivity : AppCompatActivity() {
         }
 
         rvCategory.adapter = categoryAdapter
-        getCategoriesFromDataBase(categoryAdapter)
+        GlobalScope.launch(Dispatchers.IO) {
+            getCategoriesFromDataBase()
+        }
 
         rvTask.adapter = taskAdapter
         getTaskFromDataBase(taskAdapter)
     }
 
 
-    private fun getCategoriesFromDataBase(adapter: CategoryListAdapter) {
-        GlobalScope.launch (Dispatchers.IO) {
-            val categoriesFromDb: List<CategoryEntity> = categoryDao.getAll()
-            val categoriesUiData = categoriesFromDb.map {
-                CategoryUiData(
-                    name = it.name,
-                    isSelected = it.isSelected
-                )
-            }
-                .toMutableList()
-
-            //Adicionar botão "+" nas categorias
-            categoriesUiData.add(
-                CategoryUiData(
-                    name = "    +    ",
-                    isSelected = false
-                )
+    private fun getCategoriesFromDataBase() {
+        val categoriesFromDb: List<CategoryEntity> = categoryDao.getAll()
+        val categoriesUiData = categoriesFromDb.map {
+            CategoryUiData(
+                name = it.name,
+                isSelected = it.isSelected
             )
+        }
+            .toMutableList()
 
-            GlobalScope.launch (Dispatchers.Main) {
-                categories = categoriesUiData
-                adapter.submitList(categoriesUiData)
-            }
+        //Adicionar botão "+" nas categorias
+        categoriesUiData.add(
+            CategoryUiData(
+                name = "    +    ",
+                isSelected = false
+            )
+        )
+
+        GlobalScope.launch(Dispatchers.Main) {
+            categories = categoriesUiData
+            categoryAdapter.submitList(categoriesUiData)
         }
     }
 
     private fun getTaskFromDataBase(adapter: TaskListAdapter) {
-        GlobalScope.launch (Dispatchers.IO) {
+        GlobalScope.launch(Dispatchers.IO) {
             val taskFromDB: List<TaskEntity> = taskDao.getAll()
             val taskUiData = taskFromDB.map {
                 TaskUiData(
@@ -107,10 +114,17 @@ class MainActivity : AppCompatActivity() {
                     category = it.category
                 )
             }
-            GlobalScope.launch (Dispatchers.Main) {
+            GlobalScope.launch(Dispatchers.Main) {
                 tasks = taskUiData
                 adapter.submitList(taskUiData)
             }
+        }
+    }
+
+    private fun insertCategory(categoryEntity: CategoryEntity) {
+        GlobalScope.launch(Dispatchers.IO) {
+            categoryDao.insert(categoryEntity)
+            getCategoriesFromDataBase()
         }
     }
 }
